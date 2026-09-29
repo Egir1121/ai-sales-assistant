@@ -243,6 +243,40 @@ function titleOf(id) {
   return state.products.find((p) => p.id === id)?.title ?? id;
 }
 
+// --- лента примечаний amoCRM (mock) ---
+
+const ENTITY = { leads: "Сделка", contacts: "Контакт" };
+
+async function refreshNotes() {
+  try {
+    const feed = await (await fetch("/v1/amocrm/notes")).json();
+    $("amo-mode").textContent = `· режим ${feed.mode}`;
+    if (feed.mode !== "mock") {
+      $("amo-notes").replaceChildren(h("p", { class: "muted small" }, "Live-режим: примечания пишутся в amoCRM."));
+      return;
+    }
+    $("amo-notes").replaceChildren(
+      ...(feed.notes.length
+        ? feed.notes.map((n) =>
+            h(
+              "article",
+              { class: "amo-note" },
+              h(
+                "header",
+                { class: "muted small" },
+                h("span", {}, `${ENTITY[n.target.entity] ?? n.target.entity} #${n.target.id}`),
+                h("span", {}, new Date(n.created_at).toLocaleTimeString()),
+              ),
+              h("pre", {}, n.text),
+            ),
+          )
+        : [h("p", { class: "muted small" }, "Пока пусто.")]),
+    );
+  } catch {
+    // лента — вспомогательная; ошибки сети не мешают основному демо
+  }
+}
+
 // --- сценарии ---
 
 function renderScenarios() {
@@ -288,6 +322,9 @@ async function init() {
     reset();
   });
   $("scenario").addEventListener("change", (e) => loadScenario(e.target.value));
+  $("amo-refresh").addEventListener("click", refreshNotes);
+  refreshNotes();
+  setInterval(() => document.visibilityState === "visible" && refreshNotes(), 5000);
 
   try {
     const [products, scenarios] = await Promise.all([

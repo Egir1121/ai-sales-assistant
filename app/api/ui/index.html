@@ -60,6 +60,18 @@
           </div>
         </form>
       </div>
+
+      <div class="card amo">
+        <div class="row">
+          <h2>Примечания amoCRM <span id="amo-mode" class="muted small"></span></h2>
+          <button id="amo-refresh" class="ghost" type="button">Обновить</button>
+        </div>
+        <p class="muted small">
+          Сюда попадают примечания, которые сервис пишет в сделку по вебхуку
+          <code>POST /webhooks/amocrm</code> (в mock-режиме — вместо API amoCRM).
+        </p>
+        <div id="amo-notes" class="amo-notes"><p class="muted small">Пока пусто.</p></div>
+      </div>
     </section>
 
     <aside class="card hint" aria-label="Подсказка менеджеру">

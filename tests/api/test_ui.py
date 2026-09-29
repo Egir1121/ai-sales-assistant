@@ -26,6 +26,7 @@ def test_index_page(client: TestClient) -> None:
     assert "Подсказка менеджеру" in html
     assert 'src="/static/app.js"' in html
     assert 'href="/static/styles.css"' in html
+    assert "Примечания amoCRM" in html
 
 
 @pytest.mark.parametrize("asset", ["app.js", "styles.css", "scenarios.json"])

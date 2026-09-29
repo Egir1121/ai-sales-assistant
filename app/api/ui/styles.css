@@ -178,6 +178,14 @@ select, input[type=text], textarea {
 
 .meta { border-top: 1px solid var(--border); padding-top: 8px; }
 
+.amo .row { align-items: baseline; }
+.amo h2 { margin: 0; }
+.amo code { font-size: 12px; }
+.amo-notes { display: grid; gap: 8px; max-height: 40vh; overflow-y: auto; margin-top: 8px; }
+.amo-note { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+.amo-note header { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.amo-note pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: 13px; }
+
 @media (max-width: 900px) {
   .layout { grid-template-columns: 1fr; padding: 12px 16px; }
   .topbar { padding: 12px 16px; }
