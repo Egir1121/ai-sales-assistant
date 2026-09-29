@@ -13,12 +13,10 @@ check:
 	uv run pytest --cov
 
 evals:
-	@test -f evals/run.py || { echo "evals появятся на этапе M4"; exit 1; }
-	uv run python -m evals.run --provider fake
+	uv run python -m evals.run --provider fake --out evals/report.md
 
 evals-real:
-	@test -f evals/run.py || { echo "evals появятся на этапе M4"; exit 1; }
-	uv run python -m evals.run --provider real
+	uv run python -m evals.run --provider real --out evals/report.md
 
 demo:
 	docker compose up --build

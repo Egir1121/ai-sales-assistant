@@ -43,7 +43,7 @@ known-first-party = ["app", "evals"]
 [tool.mypy]
 python_version = "3.12"
 strict = true
-files = ["app", "tests"]
+files = ["app", "evals", "tests"]
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
