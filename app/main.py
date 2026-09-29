@@ -5,7 +5,8 @@ import logging
 from fastapi import FastAPI
 
 from app import __version__
-from app.api import routes_health
+from app.api import routes_assist, routes_health
+from app.api.routes_ui import mount_ui
 from app.config import Settings
 from app.container import build_container
 
@@ -34,6 +35,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.retriever = container.retriever
     app.state.assist = container.assist
     app.include_router(routes_health.router)
+    app.include_router(routes_assist.router)
+    mount_ui(app)
     return app
 
 
