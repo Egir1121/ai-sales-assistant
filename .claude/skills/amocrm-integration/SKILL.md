@@ -40,3 +40,21 @@ paths: app/integrations/amocrm/**, tests/fixtures/amocrm/**
 
 - Фикстуры в `tests/fixtures/amocrm/` — копии примеров payload из документации (входящее, исходящее, с вложением), сохранённые как form-urlencoded строки.
 - Тесты: парсинг каждой фикстуры; ответ вебхука < 2 с даже при «медленном» FakeLLM (sleep 5 с); идемпотентность; в mock-режиме примечание уходит в лог/UI, а не в сеть.
+
+## Сверено с документацией 2026-09-29 (M5)
+
+Источник: https://www.amocrm.ru/developers/content/crm_platform/webhooks-format и
+https://www.amocrm.ru/developers/content/crm_platform/events-and-notes.
+
+- «WebHook отправляется в формате x-www-form-urlencoded» — подтверждено. Примеры payload на странице
+  показаны как JSON-структура; в `tests/fixtures/amocrm/` они сохранены в form-urlencoded без изменений.
+- В примере входящего сообщения `element_type: "1"`, `element_id: "123456789"`. Коды `element_type`
+  на странице вебхуков **не расшифрованы**. В проекте принято 1 — контакт, 2 — сделка (коды amoCRM);
+  примечание пишется в `contacts/{id}` или `leads/{id}`. Проверить на реальном аккаунте.
+- Поля входящего: `id, chat_id, talk_id, contact_id, author{id,type,name,avatar_url}, text, created_at,
+  message_type, origin, attachment{type,link,file_name}, element_id, element_type` — совпадает с описанием выше.
+- Исходящее дополнительно: `type: outgoing`, `author{..., user_id}`, `recipient{id,type,name,avatar_url}`.
+- Повторы: 2-я попытка через 5 мин и 3-я через 15 мин (для кодов 0–99, 300+); 4-я через 15 мин
+  и 5-я через 1 ч (для 499, 500–599).
+- Примечания: `POST /api/v4/{entity_type}/{entity_id}/notes`, entity_type — leads, contacts, companies,
+  customers; успех — 200 и `_embedded.notes[].id`. Лимиты на размер текста в документации не указаны.

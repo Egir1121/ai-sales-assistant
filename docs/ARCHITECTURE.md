@@ -17,6 +17,7 @@
 | pyyaml | Чтение БЗ из YAML (`safe_load`), номера строк в синтаксических ошибках | Формат БЗ задан SPEC §5; ruamel.yaml тяжелее и нужен только для записи с комментариями |
 | snowballstemmer | Стемминг ru/en для BM25 («доставку/доставки» → «доставк») | Чистый Python, без нативных зависимостей; pymorphy3 точнее, но тянет словари на ~10 МБ, а для ранжирования 20–50 записей стемминга достаточно. Типов нет — `ignore_missing_imports` точечно |
 | anthropic | Официальный SDK Claude: `AsyncAnthropic`, structured output (`output_config.format` + `transform_schema`), prompt caching, серверный fallback при refusal. Используется только в `app/llm/anthropic_client.py` и грузится лениво | Требование стека; сырой HTTP означал бы самописные типы, ретраи и ошибки. SDK 1.x работает на `httpx2` — та же библиотека, что у TestClient |
+| httpx2 | HTTP-клиент для API amoCRM (`LiveNotesClient`) и транспорт `TestClient` | Преемник `httpx` (он указан в стеке CLAUDE.md): на нём работают Anthropic SDK 1.x и TestClient в Starlette 1.x — одна HTTP-библиотека на весь проект |
 
 ### Dev
 
@@ -25,6 +26,5 @@
 | pytest, pytest-asyncio | Тесты, в т.ч. async-пайплайна |
 | pytest-cov | Покрытие `app/core`, `app/kb`, `app/upsell`; порог 85% в `make check` |
 | types-PyYAML | Типы для mypy strict |
-| httpx2 | Транспорт для `fastapi.testclient.TestClient`. Starlette 1.x объявил `httpx` устаревшим для TestClient и рекомендует `httpx2`; в CLAUDE.md в стеке указан `httpx` — используем его преемника |
 | ruff | Линтер и форматтер |
 | mypy | Проверка типов; strict для всего `app/` и `tests/` (CLAUDE.md требует strict минимум для `core`, `kb`, `upsell`) |
