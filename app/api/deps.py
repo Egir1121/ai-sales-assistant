@@ -8,6 +8,7 @@ from fastapi import Request
 
 from app.config import Settings
 from app.core.pipeline import AssistService
+from app.integrations.amocrm.processor import WebhookProcessor
 from app.kb.models import KnowledgeBase
 
 
@@ -24,3 +25,8 @@ def get_assist_service(request: Request) -> AssistService:
 def get_kb(request: Request) -> KnowledgeBase:
     kb: KnowledgeBase = request.app.state.kb
     return kb
+
+
+def get_amocrm(request: Request) -> WebhookProcessor:
+    processor: WebhookProcessor = request.app.state.amocrm
+    return processor

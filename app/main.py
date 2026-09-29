@@ -5,11 +5,13 @@
 """
 
 import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
 from app import __version__
-from app.api import routes_assist, routes_health
+from app.api import routes_assist, routes_health, routes_webhooks
 from app.api.routes_ui import mount_ui
 from app.config import Settings
 from app.container import build_container
@@ -25,20 +27,30 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     container = build_container(settings)
     logger.info(
-        "БЗ загружена: %d записей, %d правил допродажи; retriever=%s, llm=%s/%s",
+        "БЗ загружена: %d записей, %d правил допродажи; retriever=%s, llm=%s/%s, amoCRM=%s",
         len(container.kb.entries),
         len(container.kb.upsell_rules),
         settings.kb_retriever,
         container.llm.provider,
         container.llm.model,
+        settings.amocrm_mode,
     )
 
-    app = FastAPI(title="AI Sales Assistant", version=__version__)
+    @asynccontextmanager
+    async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+        yield
+        # остановка: дать фоновым вебхукам завершиться и закрыть HTTP-клиент amoCRM
+        await container.amocrm.drain()
+        await container.amocrm.notes.aclose()
+
+    app = FastAPI(title="AI Sales Assistant", version=__version__, lifespan=lifespan)
     app.state.settings = settings
     app.state.kb = container.kb
     app.state.retriever = container.retriever
     app.state.assist = container.assist
+    app.state.amocrm = container.amocrm
     app.include_router(routes_health.router)
     app.include_router(routes_assist.router)
+    app.include_router(routes_webhooks.router)
     mount_ui(app)
     return app

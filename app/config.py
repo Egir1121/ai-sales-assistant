@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     amocrm_mode: Literal["mock", "live"] = "mock"
     amocrm_subdomain: str | None = None
     amocrm_access_token: SecretStr | None = None
+    amocrm_webhook_secret: SecretStr | None = None
 
     @model_validator(mode="after")
     def _check_required_secrets(self) -> Self:
@@ -33,9 +34,11 @@ class Settings(BaseSettings):
             raise ValueError(
                 "LLM_PROVIDER=anthropic требует ANTHROPIC_API_KEY (или LLM_PROVIDER=fake)"
             )
-        if self.amocrm_mode == "live" and not (self.amocrm_subdomain and self.amocrm_access_token):
+        if self.amocrm_mode == "live" and not (
+            self.amocrm_subdomain and self.amocrm_access_token and self.amocrm_webhook_secret
+        ):
             raise ValueError(
-                "AMOCRM_MODE=live требует AMOCRM_SUBDOMAIN и AMOCRM_ACCESS_TOKEN "
-                "(или AMOCRM_MODE=mock)"
+                "AMOCRM_MODE=live требует AMOCRM_SUBDOMAIN, AMOCRM_ACCESS_TOKEN и "
+                "AMOCRM_WEBHOOK_SECRET (или AMOCRM_MODE=mock)"
             )
         return self

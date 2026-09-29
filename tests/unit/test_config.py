@@ -32,6 +32,16 @@ def test_amocrm_live_mode_requires_credentials(monkeypatch: pytest.MonkeyPatch) 
         Settings(_env_file=None)
 
 
+def test_amocrm_live_mode_requires_webhook_secret(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("AMOCRM_WEBHOOK_SECRET", raising=False)
+    monkeypatch.setenv("AMOCRM_MODE", "live")
+    monkeypatch.setenv("AMOCRM_SUBDOMAIN", "example")
+    monkeypatch.setenv("AMOCRM_ACCESS_TOKEN", "token")
+
+    with pytest.raises(ValidationError, match="AMOCRM_WEBHOOK_SECRET"):
+        Settings(_env_file=None)
+
+
 def test_unknown_provider_is_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LLM_PROVIDER", "openai")
 
