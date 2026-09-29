@@ -9,10 +9,14 @@
 
 ```bash
 cp .env.example .env
-make demo            # docker compose up --build → http://localhost:8000/health
+make demo            # docker compose up --build
 ```
 
-Без Docker: `make install && make run`. Проверки: `make check`.
+Откройте http://localhost:8000 — демо-карточка сделки: слева чат, справа подсказка менеджеру.
+Сверху — пресеты сценариев S1–S10 из SPEC: выберите сценарий и нажмите «Отправить».
+
+Без Docker: `make install && make run`. Проверки: `make check`. CLI:
+`uv run python -m app.cli "Сколько стоит X15?"`. API: `POST /v1/assist`, документация — http://localhost:8000/docs.
 
 ## Допущения
 
