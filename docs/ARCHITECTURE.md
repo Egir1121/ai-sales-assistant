@@ -16,6 +16,7 @@
 | pydantic-settings | Конфиг из env/.env с валидацией на старте | Та же модель валидации, что и везде; без самописного парсинга env |
 | pyyaml | Чтение БЗ из YAML (`safe_load`), номера строк в синтаксических ошибках | Формат БЗ задан SPEC §5; ruamel.yaml тяжелее и нужен только для записи с комментариями |
 | snowballstemmer | Стемминг ru/en для BM25 («доставку/доставки» → «доставк») | Чистый Python, без нативных зависимостей; pymorphy3 точнее, но тянет словари на ~10 МБ, а для ранжирования 20–50 записей стемминга достаточно. Типов нет — `ignore_missing_imports` точечно |
+| anthropic | Официальный SDK Claude: `AsyncAnthropic`, structured output (`output_config.format` + `transform_schema`), prompt caching, серверный fallback при refusal. Используется только в `app/llm/anthropic_client.py` и грузится лениво | Требование стека; сырой HTTP означал бы самописные типы, ретраи и ошибки. SDK 1.x работает на `httpx2` — та же библиотека, что у TestClient |
 
 ### Dev
 

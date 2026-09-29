@@ -11,6 +11,7 @@ dependencies = [
     "pydantic-settings>=2.4",
     "pyyaml>=6.0.3",
     "snowballstemmer>=3.1.1",
+    "anthropic>=1.9.0",
 ]
 
 [dependency-groups]
