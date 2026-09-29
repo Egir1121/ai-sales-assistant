@@ -5,6 +5,8 @@ from typing import Any
 
 import yaml
 
+DEMO_KB_PATH = Path(__file__).parents[1] / "data" / "kb"
+
 MINIMAL_KB: dict[str, Any] = {
     "version": 1,
     "company": {

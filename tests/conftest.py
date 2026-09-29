@@ -4,7 +4,9 @@ from typing import Any
 import pytest
 
 from app.config import Settings
-from tests.helpers import MINIMAL_KB
+from app.kb.loader import load_kb
+from app.kb.models import KnowledgeBase
+from tests.helpers import DEMO_KB_PATH, MINIMAL_KB
 
 
 @pytest.fixture
@@ -19,3 +21,8 @@ def settings(monkeypatch: pytest.MonkeyPatch) -> Settings:
 def kb_data() -> dict[str, Any]:
     """Минимальная валидная БЗ в виде dict — тесты портят её точечно."""
     return copy.deepcopy(MINIMAL_KB)
+
+
+@pytest.fixture(scope="session")
+def demo_kb() -> KnowledgeBase:
+    return load_kb(DEMO_KB_PATH)
