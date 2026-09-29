@@ -20,7 +20,7 @@ from pydantic import (
     model_validator,
 )
 
-from app.kb.text import tokenize
+from app.kb.text import extract_numbers, tokenize
 
 NonEmptyStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 
@@ -39,6 +39,9 @@ class Intent(StrEnum):
     SMALLTALK = "smalltalk"
     UNCLEAR = "unclear"
     OTHER = "other"
+
+
+Sentiment = Literal["positive", "neutral", "negative"]
 
 
 def _prefixed_id(prefix: str) -> AfterValidator:
@@ -127,6 +130,24 @@ class KnowledgeBase(_Strict):
     @cached_property
     def _by_id(self) -> dict[str, KBEntry]:
         return {entry.id: entry for entry in self.entries}
+
+    @cached_property
+    def product_mentions(self) -> dict[str, tuple[tuple[str, ...], ...]]:
+        """Токенизированные алиасы и название каждого товара — для поиска упоминаний в тексте."""
+        return {
+            p.id: tuple(tuple(tokenize(a)) for a in (*p.aliases, p.title)) for p in self.products
+        }
+
+    @cached_property
+    def numbers(self) -> frozenset[str]:
+        """Все числа, которые встречаются в БЗ, — для числового контроля ответа."""
+        texts = [self.company.name, self.company.fallback_reply]
+        for f in self.faq:
+            texts += [*f.questions, f.answer]
+        for p in self.products:
+            texts += [p.title, *p.aliases, p.description, str(p.price)]
+        texts += [policy.text for policy in self.policies]
+        return frozenset(n for text in texts for n in extract_numbers(text))
 
     def get(self, entry_id: str) -> KBEntry | None:
         return self._by_id.get(entry_id)

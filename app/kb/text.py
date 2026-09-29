@@ -6,6 +6,7 @@
 
 import re
 from collections.abc import Sequence
+from decimal import Decimal
 from functools import lru_cache
 from typing import cast
 
@@ -52,3 +53,15 @@ def contains_phrase(tokens: Sequence[str], phrase: Sequence[str]) -> bool:
     if n == 0:
         return False
     return any(list(tokens[i : i + n]) == list(phrase) for i in range(len(tokens) - n + 1))
+
+
+_NUMBER = re.compile(r"\d+(?:[ \u00a0\u202f]\d{3})*(?:[.,]\d+)?")
+_GROUP_SEPARATORS = re.compile(r"[ \u00a0\u202f]")
+
+
+def extract_numbers(text: str) -> set[str]:
+    """Числа в каноническом виде: «89 990» → «89990», «15,6» → «15.6», «00» → «0»."""
+    return {
+        format(Decimal(_GROUP_SEPARATORS.sub("", raw).replace(",", ".")).normalize(), "f")
+        for raw in _NUMBER.findall(text)
+    }
