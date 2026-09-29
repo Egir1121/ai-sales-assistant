@@ -6,12 +6,15 @@ from typing import Literal, Self
 from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.kb.retriever import RetrieverMode
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     kb_path: Path = Path("data/kb")
+    kb_retriever: RetrieverMode = "auto"
 
     llm_provider: Literal["fake", "anthropic"] = "fake"
     llm_model: str = "claude-opus-5-5"
