@@ -8,6 +8,7 @@ import asyncio
 import logging
 import time
 import uuid
+from typing import NamedTuple
 
 from app.core.guardrails import Draft, GuardrailContext, apply_guardrails
 from app.core.language import detect_language
@@ -43,6 +44,13 @@ FALLBACK_REPLY_EN = (
 )
 
 
+class Prepared(NamedTuple):
+    message: str
+    dialog: tuple[DialogTurn, ...]
+    facts: DialogFacts
+    candidates: tuple[UpsellCandidate, ...]
+
+
 class AssistService:
     def __init__(
         self, kb: KnowledgeBase, retriever: Retriever, llm: LLMClient, timeout_s: float
@@ -52,16 +60,20 @@ class AssistService:
         self._llm = llm
         self._timeout_s = timeout_s
 
-    async def assist(self, request: AssistRequest) -> AssistResponse:
-        started = time.perf_counter()
-        request_id = uuid.uuid4().hex
+    def prepare(self, request: AssistRequest) -> Prepared:
+        """Детерминированная часть до LLM: нормализация, анализ диалога, кандидаты допродажи."""
         message = normalize_text(request.message)
         dialog = tuple(
             DialogTurn(role=t.role, text=normalize_text(t.text))
             for t in request.dialog[-MAX_DIALOG_TURNS:]
         )
         facts = analyze_dialog(self._kb, dialog, message, request.lead.product_ids)
-        candidates = build_candidates(self._kb, facts)
+        return Prepared(message, dialog, facts, build_candidates(self._kb, facts))
+
+    async def assist(self, request: AssistRequest) -> AssistResponse:
+        started = time.perf_counter()
+        request_id = uuid.uuid4().hex
+        message, dialog, facts, candidates = self.prepare(request)
         logger.info(
             "assist request_id=%s message=%r turns=%d candidates=%s declined=%s",
             request_id,
