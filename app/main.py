@@ -1,4 +1,8 @@
-"""HTTP-приложение: собирает зависимости из Settings (см. app/container.py)."""
+"""HTTP-приложение: собирает зависимости из Settings (см. app/container.py).
+
+Запуск через фабрику, чтобы импорт модуля не загружал БЗ и не читал .env побочным эффектом:
+`uvicorn app.main:create_app --factory`.
+"""
 
 import logging
 
@@ -38,6 +42,3 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(routes_assist.router)
     mount_ui(app)
     return app
-
-
-app = create_app()

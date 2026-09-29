@@ -4,7 +4,7 @@ install:
 	uv sync
 
 run:
-	uv run uvicorn app.main:app --reload
+	uv run uvicorn app.main:create_app --factory --reload
 
 check:
 	uv run ruff check .
