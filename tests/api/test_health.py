@@ -1,4 +1,5 @@
 from fastapi.testclient import TestClient
+from pydantic import SecretStr
 
 from app import __version__
 from app.config import Settings
@@ -15,7 +16,9 @@ def test_health_returns_ok_without_api_key(settings: Settings) -> None:
 
 
 def test_health_reports_configured_provider(settings: Settings) -> None:
-    settings = settings.model_copy(update={"llm_provider": "anthropic"})
+    settings = settings.model_copy(
+        update={"llm_provider": "anthropic", "anthropic_api_key": SecretStr("test-key")}
+    )
     client = TestClient(create_app(settings))
 
     assert client.get("/health").json()["llm_provider"] == "anthropic"

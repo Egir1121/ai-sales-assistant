@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     llm_model: str = "claude-opus-5-5"
     llm_temperature: float = Field(default=0.2, ge=0.0, le=1.0)
     llm_timeout_s: float = Field(default=15.0, gt=0.0)
+    llm_effort: Literal["low", "medium", "high", "xhigh", "max"] = "low"
     anthropic_api_key: SecretStr | None = None
 
     amocrm_mode: Literal["mock", "live"] = "mock"

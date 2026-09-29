@@ -1,4 +1,4 @@
-"""Composition root: собирает приложение и его зависимости из Settings."""
+"""HTTP-приложение: собирает зависимости из Settings (см. app/container.py)."""
 
 import logging
 
@@ -7,8 +7,7 @@ from fastapi import FastAPI
 from app import __version__
 from app.api import routes_health
 from app.config import Settings
-from app.kb.loader import load_kb
-from app.kb.retriever import make_retriever
+from app.container import build_container
 
 logger = logging.getLogger(__name__)
 
@@ -19,18 +18,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         level=settings.log_level, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
     )
 
-    kb = load_kb(settings.kb_path)  # битая БЗ → KBError, сервис не стартует
+    container = build_container(settings)
     logger.info(
-        "БЗ загружена: %d записей, %d правил допродажи, retriever=%s",
-        len(kb.entries),
-        len(kb.upsell_rules),
+        "БЗ загружена: %d записей, %d правил допродажи; retriever=%s, llm=%s/%s",
+        len(container.kb.entries),
+        len(container.kb.upsell_rules),
         settings.kb_retriever,
+        container.llm.provider,
+        container.llm.model,
     )
 
     app = FastAPI(title="AI Sales Assistant", version=__version__)
     app.state.settings = settings
-    app.state.kb = kb
-    app.state.retriever = make_retriever(kb, settings.kb_retriever)
+    app.state.kb = container.kb
+    app.state.retriever = container.retriever
+    app.state.assist = container.assist
     app.include_router(routes_health.router)
     return app
 
