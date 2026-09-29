@@ -42,6 +42,7 @@ def build_candidates(kb: KnowledgeBase, facts: DialogFacts) -> tuple[UpsellCandi
             if_intents_any=rule.if_intents_any,
             never_if_intents=rule.never_if_intents,
             already_offered=offer.id in facts.offered_product_ids,
+            by_keyword=by_keyword,
         )
 
     return tuple(candidates.values())

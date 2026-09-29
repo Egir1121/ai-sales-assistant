@@ -68,6 +68,14 @@ def test_keyword_rules_fire_from_client_words(demo_kb: KnowledgeBase) -> None:
     assert ids(demo_kb, facts(text="хочу подключить монитор")) == ["product.dock_d7"]
 
 
+def test_candidate_knows_how_rule_fired(demo_kb: KnowledgeBase) -> None:
+    candidates = build_candidates(demo_kb, facts(deal={"product.x15"}, text="нужен монитор"))
+
+    by_keyword = {c.offer_id: c.by_keyword for c in candidates}
+    assert by_keyword["product.dock_d7"] is True
+    assert by_keyword["product.warranty_plus"] is False
+
+
 def test_product_already_in_deal_is_not_offered(demo_kb: KnowledgeBase) -> None:
     result = ids(demo_kb, facts(deal={"product.x15", "product.bag"}))
 

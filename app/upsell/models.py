@@ -39,6 +39,8 @@ class UpsellCandidate:
     if_intents_any: tuple[Intent, ...]
     never_if_intents: tuple[Intent, ...]
     already_offered: bool
+    by_keyword: bool = False
+    """Правило сработало по словам клиента, а не по тегу товара сделки — повод сильнее."""
 
     def allowed_for(self, intent: Intent) -> bool:
         if intent in self.never_if_intents:
