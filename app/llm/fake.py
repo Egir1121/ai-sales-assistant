@@ -51,7 +51,7 @@ _NEXT_ACTION = {
     Intent.ORDER_INTENT: "Подтвердить состав заказа, адрес и способ оплаты",
     Intent.DELIVERY_PAYMENT_QUESTION: "Уточнить адрес и предложить оформить заказ сегодня",
     Intent.PRICE_QUESTION: "Уточнить конфигурацию и предложить оформить заказ",
-    Intent.DISCOUNT_REQUEST: "Не обещать скидку; согласовать по политике policy.discount",
+    Intent.DISCOUNT_REQUEST: "Не обещать скидку клиенту до согласования.",
     Intent.PRICE_OBJECTION: "Предложить рассрочку или комплект вместо скидки",
     Intent.COMPLAINT: "Извиниться, оформить обращение в сервис, ничего не предлагать",
     Intent.REFUND: "Проверить условия возврата и передать руководителю сервиса",
@@ -121,7 +121,7 @@ class FakeLLM:
             summary=_summary(ctx, intent),
             upsell=_upsell(ctx, intent, sentiment),
             declined_offer_ids=[],
-            next_best_action=_NEXT_ACTION.get(intent, "Ответить на вопрос и уточнить потребность"),
+            next_best_action=_next_action(intent, refs),
             risk_flags=risk_flags,
         )
 
@@ -233,6 +233,12 @@ def _fact(entry: FaqEntry | Product) -> str:
     return f"{fact} {entry.description}" if entry.description else fact
 
 
+def _next_action(intent: Intent, refs: list[KBEntry]) -> str:
+    action = _NEXT_ACTION.get(intent, "Ответить на вопрос и уточнить потребность")
+    policies = [e.text for e in refs if isinstance(e, Policy)]
+    return " ".join([action, *(f"Политика: {text}" for text in policies)])
+
+
 def _summary(ctx: PromptContext, intent: Intent) -> str:
     kb = ctx.kb
     parts = [_INTENT_RU[intent] + "."]
@@ -248,8 +254,10 @@ def _summary(ctx: PromptContext, intent: Intent) -> str:
 def _upsell(ctx: PromptContext, intent: Intent, sentiment: Sentiment) -> list[LLMUpsell]:
     if sentiment == "negative" or intent in (Intent.COMPLAINT, Intent.REFUND, Intent.UNCLEAR):
         return []
+    # сначала то, что ещё не предлагали; среди них — то, о чём клиент сказал сам
     fresh_first = sorted(
-        (c for c in ctx.candidates if c.allowed_for(intent)), key=lambda c: c.already_offered
+        (c for c in ctx.candidates if c.allowed_for(intent)),
+        key=lambda c: (c.already_offered, not c.by_keyword),
     )
     when = (
         "После подтверждения заказа"

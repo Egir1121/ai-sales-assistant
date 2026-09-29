@@ -101,3 +101,17 @@ async def test_scripted_output_and_failure_modes(demo_kb: KnowledgeBase) -> None
 
     with pytest.raises(LLMError):
         await FakeLLM(error=LLMError("boom")).generate(request)
+
+
+async def test_prefers_offer_the_client_asked_about(demo_kb: KnowledgeBase) -> None:
+    out = await run(
+        demo_kb, "Хочу подключать X15 к внешнему монитору", lead_product_ids=("product.x15",)
+    )
+
+    assert out.upsell[0].offer_id == "product.dock_d7"
+
+
+async def test_discount_hint_quotes_policy(demo_kb: KnowledgeBase) -> None:
+    out = await run(demo_kb, "Сделаете скидку 10%?")
+
+    assert "руководитель отдела продаж" in out.next_best_action
