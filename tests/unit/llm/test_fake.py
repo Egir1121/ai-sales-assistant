@@ -86,6 +86,7 @@ async def test_suggests_only_candidates_not_offered_yet(demo_kb: KnowledgeBase) 
 
     offered = [u.offer_id for u in out.upsell]
     assert offered
+    assert all(u.pitch.endswith("?") and ": " not in u.pitch for u in out.upsell)
     assert "product.bag" not in offered
     assert len(offered) <= 2
 

@@ -77,6 +77,14 @@ class AnthropicLLMClient:
         )
 
     async def generate(self, request: LLMRequest) -> LLMResult:
+        try:
+            return await self._generate(request)
+        except LLMError:
+            raise
+        except Exception as exc:  # неожиданная форма ответа SDK/API — тоже повод для фолбэка
+            raise LLMError(f"неожиданная ошибка при вызове Anthropic: {exc!r}") from exc
+
+    async def _generate(self, request: LLMRequest) -> LLMResult:
         usage = {"in": 0, "out": 0, "cache_read": 0, "cache_write": 0}
         problem = ""
         for attempt in range(1, self._max_attempts + 1):
@@ -143,6 +151,8 @@ class AnthropicLLMClient:
             raise LLMError(f"ошибка API Anthropic {exc.status_code}: {exc.message}") from exc
         except anthropic.APIConnectionError as exc:  # включает APITimeoutError
             raise LLMError(f"нет связи с API Anthropic: {exc}") from exc
+        except anthropic.AnthropicError as exc:  # прочие ошибки SDK (например, разбор ответа)
+            raise LLMError(f"ошибка SDK Anthropic: {exc}") from exc
 
     def _cost(self, usage: dict[str, int]) -> float | None:
         prices = next((p for m, p in _PRICES.items() if self.model.startswith(m)), None)

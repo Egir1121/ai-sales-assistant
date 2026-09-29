@@ -152,3 +152,11 @@ async def test_http_error_is_wrapped_without_retry(request_: LLMRequest) -> None
     with pytest.raises(LLMError):
         await client_with(handler).generate(request_)
     assert calls == 1  # ретраи SDK выключены: общий дедлайн контролирует пайплайн
+
+
+async def test_unexpected_sdk_error_is_wrapped(request_: LLMRequest) -> None:
+    def handler(req: httpx2.Request) -> httpx2.Response:
+        return httpx2.Response(200, content=b"<html>not json</html>")
+
+    with pytest.raises(LLMError):
+        await client_with(handler).generate(request_)
