@@ -22,6 +22,7 @@ from app.core.models import (
 )
 from app.core.normalize import MAX_DIALOG_TURNS, has_content, normalize_text
 from app.core.pii import mask_pii
+from app.core.signals import is_gibberish
 from app.kb.models import Intent, KnowledgeBase
 from app.kb.retriever import Retriever
 from app.llm.base import LLMClient, LLMError, LLMResult, PromptContext
@@ -36,6 +37,10 @@ CLARIFY_REPLY = {
     "ru": "Здравствуйте! Уточните, пожалуйста, что вас интересует?",
     "en": "Hello! Could you please clarify what you are interested in?",
 }
+# fallback_reply в БЗ — на языке компании; для остальных языков нейтральный шаблон без фактов
+FALLBACK_REPLY_EN = (
+    "Hello! Thank you for your message. We will check the details and get back to you shortly."
+)
 
 
 class AssistService:
@@ -66,7 +71,7 @@ class AssistService:
             sorted(facts.declined_product_ids),
         )
 
-        if not has_content(message):
+        if not has_content(message) or is_gibberish(message, self._kb.vocabulary):
             return self._clarify(request_id, request, facts, started)
 
         ctx = PromptContext(
@@ -84,7 +89,10 @@ class AssistService:
                 result = await self._llm.generate(build_request(ctx))
         except (TimeoutError, LLMError) as exc:
             logger.warning("LLM недоступен, фолбэк request_id=%s: %r", request_id, exc)
-            return self._fallback(request_id, facts, started)
+            return self._fallback(request_id, message, facts, started)
+        except Exception:  # инвариант 7: любая ошибка провайдера — деградация, а не 500
+            logger.exception("Неожиданная ошибка LLM, фолбэк request_id=%s", request_id)
+            return self._fallback(request_id, message, facts, started)
 
         return self._finalize(request_id, ctx, result, started)
 
@@ -174,7 +182,7 @@ class AssistService:
     def _clarify(
         self, request_id: str, request: AssistRequest, facts: DialogFacts, started: float
     ) -> AssistResponse:
-        """S10: пустое или бессмысленное сообщение — уточняющий вопрос без вызова LLM."""
+        """S10: пустое сообщение или набор символов — уточняющий вопрос без вызова LLM."""
         history = " ".join(t.text for t in request.dialog if t.role == "client")
         language = detect_language(history) or "ru"
         return self._template_response(
@@ -192,12 +200,15 @@ class AssistService:
             fallback=False,
         )
 
-    def _fallback(self, request_id: str, facts: DialogFacts, started: float) -> AssistResponse:
+    def _fallback(
+        self, request_id: str, message: str, facts: DialogFacts, started: float
+    ) -> AssistResponse:
+        language = detect_language(message) or "ru"
         return self._template_response(
             request_id,
             started,
-            text=self._kb.company.fallback_reply,
-            language="ru",
+            text=self._kb.company.fallback_reply if language == "ru" else FALLBACK_REPLY_EN,
+            language=language,
             needs_manager=True,
             summary="LLM недоступен, ответьте вручную.",
             intent=Intent.OTHER,

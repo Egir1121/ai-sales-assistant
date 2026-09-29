@@ -8,9 +8,9 @@
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
-from app.core.signals import negative_signals
+from app.core.signals import injection_signal, negative_signals
 from app.kb.models import Intent, KnowledgeBase, Sentiment
-from app.kb.text import contains_phrase, extract_numbers, tokenize
+from app.kb.text import contains_phrase, extract_numbers, mention_tokens
 from app.llm.schema import LLMUpsell
 from app.upsell.models import UpsellCandidate
 
@@ -82,8 +82,14 @@ def filter_offers(draft: Draft, ctx: GuardrailContext) -> bool:
 
 
 def suppress_upsell(draft: Draft, ctx: GuardrailContext) -> bool:
-    """Жалоба, возврат, негатив (по LLM или по словарю) и непонятный запрос → допродажи нет."""
+    """Жалоба, возврат, негатив, попытка инъекции (по LLM или по словарю) и непонятный
+    запрос → допродажи нет."""
     signals = negative_signals(ctx.message)
+    injection = injection_signal(ctx.message) or "prompt_injection" in draft.risk_flags
+    if injection:
+        draft.flag("prompt_injection")
+    if signals:
+        draft.sentiment = "negative"  # словарь сильнее «нейтрального» тона от LLM
     reason: str | None = None
     if draft.intent in SUPPRESS_INTENTS or signals:
         reason = "Жалоба или возврат: сначала решить проблему клиента, допродажа неуместна"
@@ -91,6 +97,8 @@ def suppress_upsell(draft: Draft, ctx: GuardrailContext) -> bool:
             draft.flag("complaint_signal")
     elif draft.sentiment == "negative":
         reason = "Негативный тон клиента: допродажа сейчас оттолкнёт"
+    elif injection:
+        reason = "В сообщении попытка управлять ассистентом: ответить по делу, без допродажи"
     elif draft.intent == Intent.UNCLEAR:
         reason = "Запрос непонятен: сначала уточнить, что нужно клиенту"
     if reason is None:
@@ -98,7 +106,7 @@ def suppress_upsell(draft: Draft, ctx: GuardrailContext) -> bool:
 
     draft.upsell = []
     draft.upsell_suppressed_reason = reason
-    reply_tokens = tokenize(draft.reply_text)
+    reply_tokens = mention_tokens(draft.reply_text)
     for candidate in ctx.candidates:
         if any(contains_phrase(reply_tokens, alias) for alias in _mentions(ctx.kb, candidate)):
             draft.flag("upsell_in_reply")
@@ -121,6 +129,18 @@ def check_numbers(draft: Draft, ctx: GuardrailContext) -> bool:
     return True
 
 
+def check_unanswered_numbers(draft: Draft, ctx: GuardrailContext) -> bool:
+    """Число из вопроса клиента, которого нет ни в БЗ, ни в ответе («рассрочка на 36 месяцев»,
+    «iPhone 17»), значит, ответ на этот вопрос не дан → нужен менеджер."""
+    reply_numbers = extract_numbers(draft.reply_text)
+    missing = extract_numbers(ctx.message) - ctx.kb.numbers - reply_numbers
+    if not missing:
+        return False
+    draft.flag("unanswered_number")
+    draft.needs_manager = True
+    return True
+
+
 def cap_upsell(draft: Draft, ctx: GuardrailContext) -> bool:
     if len(draft.upsell) <= MAX_UPSELL:
         return False
@@ -133,6 +153,7 @@ GUARDRAILS: tuple[tuple[str, Guardrail], ...] = (
     ("offers_filtered", filter_offers),
     ("upsell_suppressed", suppress_upsell),
     ("unverified_number", check_numbers),
+    ("unanswered_number", check_unanswered_numbers),
     ("upsell_capped", cap_upsell),
 )
 
@@ -148,6 +169,7 @@ __all__ = [
     "apply_guardrails",
     "cap_upsell",
     "check_numbers",
+    "check_unanswered_numbers",
     "extract_numbers",
     "filter_kb_refs",
     "filter_offers",

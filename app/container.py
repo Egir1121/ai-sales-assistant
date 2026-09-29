@@ -24,7 +24,8 @@ def make_llm_client(settings: Settings) -> LLMClient:
         return FakeLLM()
     from app.llm.anthropic_client import AnthropicLLMClient  # SDK грузим, только если нужен
 
-    assert settings.anthropic_api_key is not None  # гарантирует валидация Settings
+    if settings.anthropic_api_key is None:  # Settings это уже проверяет; здесь — для типов и -O
+        raise ValueError("LLM_PROVIDER=anthropic требует ANTHROPIC_API_KEY")
     return AnthropicLLMClient(
         api_key=settings.anthropic_api_key.get_secret_value(),
         model=settings.llm_model,
