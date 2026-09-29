@@ -10,7 +10,7 @@ check:
 	uv run ruff check .
 	uv run ruff format --check .
 	uv run mypy
-	uv run pytest
+	uv run pytest --cov
 
 evals:
 	@test -f evals/run.py || { echo "evals появятся на этапе M4"; exit 1; }

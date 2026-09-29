@@ -14,12 +14,16 @@
 | uvicorn | ASGI-сервер | Стандарт для FastAPI; без `[standard]`-extras — меньше образ |
 | pydantic | Модели на всех границах (HTTP, БЗ, ответ LLM, payload вебхука) | Требование стека |
 | pydantic-settings | Конфиг из env/.env с валидацией на старте | Та же модель валидации, что и везде; без самописного парсинга env |
+| pyyaml | Чтение БЗ из YAML (`safe_load`), номера строк в синтаксических ошибках | Формат БЗ задан SPEC §5; ruamel.yaml тяжелее и нужен только для записи с комментариями |
+| snowballstemmer | Стемминг ru/en для BM25 («доставку/доставки» → «доставк») | Чистый Python, без нативных зависимостей; pymorphy3 точнее, но тянет словари на ~10 МБ, а для ранжирования 20–50 записей стемминга достаточно. Типов нет — `ignore_missing_imports` точечно |
 
 ### Dev
 
 | Пакет | Зачем |
 |---|---|
 | pytest, pytest-asyncio | Тесты, в т.ч. async-пайплайна |
+| pytest-cov | Покрытие `app/core`, `app/kb`, `app/upsell`; порог 85% в `make check` |
+| types-PyYAML | Типы для mypy strict |
 | httpx2 | Транспорт для `fastapi.testclient.TestClient`. Starlette 1.x объявил `httpx` устаревшим для TestClient и рекомендует `httpx2`; в CLAUDE.md в стеке указан `httpx` — используем его преемника |
 | ruff | Линтер и форматтер |
 | mypy | Проверка типов; strict для всего `app/` и `tests/` (CLAUDE.md требует strict минимум для `core`, `kb`, `upsell`) |

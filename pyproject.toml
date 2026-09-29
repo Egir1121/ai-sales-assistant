@@ -9,6 +9,8 @@ dependencies = [
     "uvicorn>=0.30",
     "pydantic>=2.8",
     "pydantic-settings>=2.4",
+    "pyyaml>=6.0.3",
+    "snowballstemmer>=3.1.1",
 ]
 
 [dependency-groups]
@@ -17,7 +19,9 @@ dev = [
     "mypy>=1.11",
     "pytest>=8.3",
     "pytest-asyncio>=0.24",
+    "pytest-cov>=7.1.0",
     "ruff>=0.6",
+    "types-pyyaml>=6.0.12.20260906",
 ]
 
 [tool.uv]
@@ -41,6 +45,10 @@ strict = true
 files = ["app", "tests"]
 plugins = ["pydantic.mypy"]
 
+[[tool.mypy.overrides]]
+module = ["snowballstemmer"]
+ignore_missing_imports = true
+
 [tool.pydantic-mypy]
 init_forbid_extra = true
 init_typed = true
@@ -51,3 +59,11 @@ asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 addopts = "-q"
 pythonpath = ["."]
+
+[tool.coverage.run]
+source = ["app/core", "app/kb", "app/upsell"]
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+skip_covered = true
