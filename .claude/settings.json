@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(uv run *)",
+      "Bash(uv sync)",
+      "Bash(make *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(docker compose *)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Bash(git push *)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && if [ -f pyproject.toml ]; then uv run ruff format --quiet .; uv run ruff check --fix --quiet .; fi >/dev/null 2>&1; exit 0"
+          }
+        ]
+      }
+    ]
+  }
+}
