@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Sales Assistant — демо</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">✦</span>
+      <span>AI Sales Assistant</span>
+      <span class="muted">· демо карточки сделки amoCRM</span>
+    </div>
+    <div class="toolbar">
+      <label class="muted" for="scenario">Сценарий</label>
+      <select id="scenario"><option value="">— свой диалог —</option></select>
+      <button id="reset" class="ghost" type="button">Сбросить</button>
+    </div>
+  </header>
+
+  <p id="expect" class="expect" hidden></p>
+
+  <main class="layout">
+    <section class="deal" aria-label="Сделка и чат">
+      <div class="card lead">
+        <h2>Сделка <span id="lead-id" class="muted"></span></h2>
+        <div class="lead-fields">
+          <label>Клиент <input id="client-name" type="text" placeholder="Имя клиента" autocomplete="off"></label>
+          <label>Этап
+            <select id="stage">
+              <option>Первичный контакт</option>
+              <option selected>Консультация</option>
+              <option>Переговоры</option>
+              <option>Успешно реализовано</option>
+            </select>
+          </label>
+        </div>
+        <fieldset class="products">
+          <legend>Товары сделки</legend>
+          <div id="products" class="chips"></div>
+        </fieldset>
+      </div>
+
+      <div class="card chat">
+        <div id="messages" class="messages" aria-live="polite">
+          <p class="empty muted">Выберите сценарий сверху или напишите сообщение от лица клиента.</p>
+        </div>
+        <form id="composer" class="composer">
+          <div class="role" role="radiogroup" aria-label="От чьего имени">
+            <label><input type="radio" name="role" value="client" checked> Клиент</label>
+            <label><input type="radio" name="role" value="manager"> Менеджер</label>
+          </div>
+          <textarea id="text" rows="3" placeholder="Сообщение… (Ctrl+Enter — отправить)"></textarea>
+          <div class="composer-actions">
+            <span class="muted small">Сообщение клиента сразу уходит ассистенту</span>
+            <button id="regenerate" class="ghost" type="button">Подсказка заново</button>
+            <button type="submit">Отправить</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <aside class="card hint" aria-label="Подсказка менеджеру">
+      <h2>Подсказка менеджеру</h2>
+      <div id="status" class="status muted">Подсказка появится после сообщения клиента.</div>
+      <div id="result" hidden>
+        <section class="block">
+          <h3>✉️ Черновик ответа клиенту</h3>
+          <div id="needs-manager" class="warn" hidden>Нужен менеджер: в базе знаний не хватило данных или требуется согласование</div>
+          <p id="reply" class="reply"></p>
+          <div class="row">
+            <div id="kb-refs" class="chips"></div>
+            <button id="use-reply" class="ghost" type="button">Вставить в чат</button>
+          </div>
+        </section>
+
+        <section class="block">
+          <h3>💡 Подсказка</h3>
+          <p id="summary"></p>
+          <div id="badges" class="chips"></div>
+          <div id="suppressed" class="notice" hidden></div>
+          <div id="upsell" class="offers"></div>
+          <dl class="facts">
+            <dt>Клиент отказался</dt><dd id="declined">—</dd>
+            <dt>Следующий шаг</dt><dd id="next-action"></dd>
+            <dt>Риски</dt><dd id="risks">—</dd>
+          </dl>
+        </section>
+
+        <footer id="meta" class="meta muted small"></footer>
+      </div>
+    </aside>
+  </main>
+
+  <script type="module" src="/static/app.js"></script>
+</body>
+</html>
