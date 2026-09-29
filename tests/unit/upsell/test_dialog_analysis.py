@@ -114,3 +114,38 @@ def test_unknown_lead_products_are_ignored(demo_kb: KnowledgeBase) -> None:
     facts = analyze_dialog(demo_kb, [], "Привет", lead_product_ids=["product.unknown"])
 
     assert facts.deal_product_ids == set()
+
+
+@pytest.mark.parametrize(
+    ("offer", "reply", "declined"),
+    [
+        ("Могу предложить гарантию +2 года", "Нет, гарантия не нужна", "product.warranty_plus"),
+        (
+            "Кстати, к X15 можно оформить гарантию ещё на 2 года — ремонт без вопросов.",
+            "Спасибо, не надо",
+            "product.warranty_plus",
+        ),
+        (
+            "Могу сразу настроить ноутбук и перенести данные",
+            "Не нужно, сам настрою",
+            "product.setup_service",
+        ),
+    ],
+)
+def test_offer_phrased_in_other_word_forms_is_recognized(
+    demo_kb: KnowledgeBase, offer: str, reply: str, declined: str
+) -> None:
+    dialog = [client("Беру X15"), manager(offer), client(reply)]
+
+    facts = analyze_dialog(demo_kb, dialog, "Когда доставка?", lead_product_ids=["product.x15"])
+
+    assert declined in facts.offered_product_ids
+    assert facts.declined_product_ids == {declined}
+
+
+def test_manufacturer_warranty_is_not_an_offer(demo_kb: KnowledgeBase) -> None:
+    dialog = [manager("На X15 гарантия производителя 1 год"), client("Нет, спасибо, понял")]
+
+    facts = analyze_dialog(demo_kb, dialog, "Когда доставка?", lead_product_ids=["product.x15"])
+
+    assert facts.declined_product_ids == set()

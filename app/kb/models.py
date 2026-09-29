@@ -20,7 +20,7 @@ from pydantic import (
     model_validator,
 )
 
-from app.kb.text import extract_numbers, tokenize
+from app.kb.text import ROOT_LEN, extract_numbers, mention_tokens, tokenize
 
 NonEmptyStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 
@@ -135,8 +135,29 @@ class KnowledgeBase(_Strict):
     def product_mentions(self) -> dict[str, tuple[tuple[str, ...], ...]]:
         """Токенизированные алиасы и название каждого товара — для поиска упоминаний в тексте."""
         return {
-            p.id: tuple(tuple(tokenize(a)) for a in (*p.aliases, p.title)) for p in self.products
+            p.id: tuple(tuple(mention_tokens(a)) for a in (*p.aliases, p.title))
+            for p in self.products
         }
+
+    @cached_property
+    def vocabulary(self) -> frozenset[str]:
+        """Основы всех слов БЗ и их корни (с префиксом «~») — чтобы отличать вопросы вне БЗ."""
+        texts = [self.company.name]
+        for f in self.faq:
+            texts += [*f.questions, f.answer]
+        for p in self.products:
+            texts += [p.title, *p.aliases, *p.tags, p.description]
+        texts += [policy.text for policy in self.policies]
+        for rule in self.upsell_rules:
+            texts += [rule.why, *rule.if_message_keywords_any]
+        stems = {t for text in texts for t in tokenize(text)}
+        return frozenset(stems | {f"~{t[:ROOT_LEN]}" for t in stems if len(t) > ROOT_LEN})
+
+    def knows(self, token: str) -> bool:
+        """Встречается ли основа (или её корень, или число) где-нибудь в БЗ."""
+        if token in self.vocabulary or token in self.numbers:
+            return True
+        return len(token) > ROOT_LEN and f"~{token[:ROOT_LEN]}" in self.vocabulary
 
     @cached_property
     def numbers(self) -> frozenset[str]:
@@ -199,7 +220,7 @@ class KnowledgeBase(_Strict):
         owners: defaultdict[str, set[str]] = defaultdict(set)
         for product in self.products:
             for alias in product.aliases:
-                owners[" ".join(tokenize(alias))].add(product.id)
+                owners[" ".join(mention_tokens(alias))].add(product.id)
         return [
             f"алиас {alias!r} используется в нескольких товарах: {', '.join(sorted(ids))}"
             for alias, ids in owners.items()

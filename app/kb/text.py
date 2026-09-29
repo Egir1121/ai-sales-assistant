@@ -47,6 +47,19 @@ def tokenize(text: str) -> list[str]:
     return [stem(w) for w in _WORD.findall(normalize(text)) if w not in STOPWORDS]
 
 
+ROOT_LEN = 5
+
+
+def root(token: str) -> str:
+    """Грубый корень — первые 5 символов основы: «доставить»/«доставка», «настроить»/«настройка»."""
+    return token[:ROOT_LEN] if len(token) > ROOT_LEN else token
+
+
+def mention_tokens(text: str) -> list[str]:
+    """Токены для поиска упоминаний товаров: основа, сведённая к корню."""
+    return [root(t) for t in tokenize(text)]
+
+
 def contains_phrase(tokens: Sequence[str], phrase: Sequence[str]) -> bool:
     """Есть ли `phrase` в `tokens` как непрерывная последовательность целых токенов."""
     n = len(phrase)

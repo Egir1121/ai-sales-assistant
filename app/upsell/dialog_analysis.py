@@ -15,7 +15,7 @@ import re
 from collections.abc import Iterable, Sequence
 
 from app.kb.models import KnowledgeBase
-from app.kb.text import contains_phrase, normalize, tokenize
+from app.kb.text import contains_phrase, mention_tokens, normalize, tokenize
 from app.upsell.models import DialogFacts, Turn
 
 _SEGMENT_SPLIT = re.compile(r"(?<=[.,;:!?])\s*|\s+(?=\b(?:а|но|but)\b)")
@@ -37,7 +37,7 @@ def _segments(text: str) -> list[str]:
 
 
 def mentioned_products(kb: KnowledgeBase, text: str) -> set[str]:
-    tokens = tokenize(text)
+    tokens = mention_tokens(text)
     return {
         product_id
         for product_id, aliases in kb.product_mentions.items()

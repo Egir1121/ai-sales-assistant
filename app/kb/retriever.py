@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from typing import Literal, Protocol
 
 from app.kb.models import FaqEntry, KBEntry, KnowledgeBase, Policy, Product
-from app.kb.text import contains_phrase, tokenize
+from app.kb.text import ROOT_LEN, contains_phrase, root, tokenize
 
 RetrieverMode = Literal["auto", "full", "keyword"]
 
@@ -30,12 +30,11 @@ ALIAS_BONUS = 10.0
 # Snowball разводит формы одного корня («доставить» → «достав», «доставка» → «доставк»).
 # Поэтому индексируем ещё и префикс основы — с половинным весом, чтобы точное совпадение
 # оставалось сильнее и случайные совпадения корней не выходили в топ.
-PREFIX_LEN = 5
 PREFIX_WEIGHT = 0.5
 
 
 def index_terms(tokens: Sequence[str]) -> list[str]:
-    return [*tokens, *(f"~{t[:PREFIX_LEN]}" for t in tokens if len(t) > PREFIX_LEN)]
+    return [*tokens, *(f"~{root(t)}" for t in tokens if len(t) > ROOT_LEN)]
 
 
 def _weight(term: str) -> float:
