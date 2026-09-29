@@ -25,6 +25,22 @@ def test_keyword_finds_product_by_alias(kb_data: dict[str, Any]) -> None:
     assert hits[0].entry.id == "product.x15"
 
 
+def test_other_word_forms_of_the_same_root_match(kb_data: dict[str, Any]) -> None:
+    # Snowball: «доставите» → «достав», «доставка» → «доставк»; совпадают по префиксу основы
+    hits = KeywordRetriever(_kb(kb_data)).retrieve("Когда доставите?").hits
+
+    assert hits[0].entry.id == "faq.delivery"
+
+
+def test_exact_stem_outranks_prefix_match(kb_data: dict[str, Any]) -> None:
+    kb_data["faq"].append(
+        {"id": "faq.delivery_time", "questions": ["когда доставите"], "answer": "Завтра."}
+    )
+    hits = KeywordRetriever(_kb(kb_data)).retrieve("Когда доставите?").hits
+
+    assert hits[0].entry.id == "faq.delivery_time"
+
+
 def test_irrelevant_or_empty_query_returns_no_hits(kb_data: dict[str, Any]) -> None:
     retriever = KeywordRetriever(_kb(kb_data))
 

@@ -27,6 +27,20 @@ _CHARS_PER_TOKEN = 3
 # Прямое упоминание товара по алиасу («икс 15») важнее совпадения отдельных слов.
 ALIAS_BONUS = 10.0
 
+# Snowball разводит формы одного корня («доставить» → «достав», «доставка» → «доставк»).
+# Поэтому индексируем ещё и префикс основы — с половинным весом, чтобы точное совпадение
+# оставалось сильнее и случайные совпадения корней не выходили в топ.
+PREFIX_LEN = 5
+PREFIX_WEIGHT = 0.5
+
+
+def index_terms(tokens: Sequence[str]) -> list[str]:
+    return [*tokens, *(f"~{t[:PREFIX_LEN]}" for t in tokens if len(t) > PREFIX_LEN)]
+
+
+def _weight(term: str) -> float:
+    return PREFIX_WEIGHT if term.startswith("~") else 1.0
+
 
 @dataclass(frozen=True)
 class KBHit:
@@ -69,7 +83,7 @@ class _BM25:
             df = self._df.get(term, 0)
             if not df:
                 continue
-            idf = math.log(1 + (self._n - df + 0.5) / (df + 0.5))
+            idf = _weight(term) * math.log(1 + (self._n - df + 0.5) / (df + 0.5))
             for i, tf in enumerate(self._tf):
                 freq = tf.get(term, 0)
                 if freq:
@@ -85,7 +99,7 @@ class KeywordRetriever:
         self._kb = kb
         self._k = k
         self._entries = kb.entries
-        self._bm25 = _BM25([tokenize(entry_text(e)) for e in self._entries])
+        self._bm25 = _BM25([index_terms(tokenize(entry_text(e))) for e in self._entries])
         self._aliases = [
             [tokenize(a) for a in e.aliases] if isinstance(e, Product) else []
             for e in self._entries
@@ -95,7 +109,7 @@ class KeywordRetriever:
         tokens = tokenize(query)
         if not tokens:
             return ()
-        scores = self._bm25.scores(tokens)
+        scores = self._bm25.scores(index_terms(tokens))
         for i, aliases in enumerate(self._aliases):
             if any(contains_phrase(tokens, alias) for alias in aliases):
                 scores[i] += ALIAS_BONUS
