@@ -113,6 +113,7 @@ company:
   name: "…"
   tone: "на вы, дружелюбно, коротко, без канцелярита и лишних восклицаний"
   signature: "Команда …"
+  fallback_reply: "…"          # шаблон при недоступности LLM (§6); добавлено, допущение A10
 faq:
   - id: faq.delivery
     questions: ["доставка", "сколько везти", "доставка в регионы"]
@@ -123,20 +124,23 @@ products:
     price: 89990
     currency: RUB
     tags: [laptop]
-    aliases: ["x15", "икс 15"]
+    aliases: ["x15", "икс 15"]   # минимум один; не пересекаются между товарами
+    description: "…"             # опционально: характеристики — тоже факты для ответа
+    in_stock: true               # опционально, по умолчанию true
 policies:
   - id: policy.discount
     text: "Скидку больше 5% согласует только руководитель отдела продаж."
 upsell_rules:
   - id: rule.laptop_warranty
     if_product_tags_any: [laptop]
+    if_message_keywords_any: []  # альтернативный триггер по словам в сообщении; нужен хотя бы один
     if_intents_any: []           # пусто = любой интент
     offer_id: product.warranty_plus
     why: "Снижает страх поломки дорогой покупки"
     never_if_intents: [complaint, refund]
 ```
 
-Ссылочная целостность проверяется при загрузке: каждый `offer_id` существует в `products`, id уникальны.
+Ссылочная целостность проверяется при загрузке: каждый `offer_id` существует в `products`, id уникальны, теги правил есть у товаров, алиасы товаров не пересекаются. Источник правды схемы — `app/kb/models.py`; интенты — `Intent` там же.
 
 ## 6. Пайплайн
 
